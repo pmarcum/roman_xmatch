@@ -57,9 +57,9 @@ roman-xmatch = "roman_xmatch.cli:main"
 
 
 [project.urls]
-Homepage   = "https://github.com/YOUR_USERNAME/roman-xmatch"
-Repository = "https://github.com/YOUR_USERNAME/roman-xmatch"
-Issues     = "https://github.com/YOUR_USERNAME/roman-xmatch/issues"
+Homepage   = "https://github.com/YOUR_USERNAME/roman_xmatch"
+Repository = "https://github.com/YOUR_USERNAME/roman_xmatch"
+Issues     = "https://github.com/YOUR_USERNAME/roman_xmatch/issues"
 
 
 [tool.hatch.build.targets.wheel]
