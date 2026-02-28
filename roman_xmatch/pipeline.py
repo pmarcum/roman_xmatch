@@ -147,9 +147,10 @@ def run_pipeline(
             # Footprint filter (NED pre-filters during tiling)
             if cat_key != "ned":
                 try:
+                    ra_vals  = np.array(table["RA"],  dtype=float)
+                    dec_vals = np.array(table["Dec"], dtype=float)
                     inside = points_in_footprint(
-                        table["RA"].data.astype(float),
-                        table["Dec"].data.astype(float),
+                        ra_vals, dec_vals,
                         footprint,
                         healpix_mask,
                         healpix_nside,

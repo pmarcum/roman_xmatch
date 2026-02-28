@@ -108,11 +108,30 @@ def _vizier_query(catalog_id: str, columns: list, row_limit: int) -> Table | Non
 
 def _standardise(table: Table, ra_col: str, dec_col: str,
                  catalog_tag: str, id_col: str = None) -> Table:
-    """Rename RA/Dec columns and add catalog + object_id columns."""
+    """
+    Rename RA/Dec columns, force them to plain float64, and add
+    catalog + object_id columns.
+
+    VizieR sometimes returns masked or structured columns; converting to
+    plain numpy float arrays avoids downstream KeyError / attribute errors.
+    """
+    # Rename to standard names
     if ra_col in table.colnames and ra_col != "RA":
         table.rename_column(ra_col, "RA")
     if dec_col in table.colnames and dec_col != "Dec":
         table.rename_column(dec_col, "Dec")
+
+    # Force RA / Dec to plain float columns (strips masks, units, etc.)
+    if "RA" in table.colnames:
+        table["RA"] = np.array(table["RA"], dtype=float)
+    if "Dec" in table.colnames:
+        table["Dec"] = np.array(table["Dec"], dtype=float)
+
+    # Drop rows where RA or Dec is NaN
+    if "RA" in table.colnames and "Dec" in table.colnames:
+        good = np.isfinite(table["RA"]) & np.isfinite(table["Dec"])
+        table = table[good]
+
     table["catalog"] = catalog_tag
     if id_col and id_col in table.colnames:
         table["object_id"] = [str(r[id_col]) for r in table]
