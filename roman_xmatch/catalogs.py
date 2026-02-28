@@ -28,6 +28,7 @@ from astroquery.vizier import Vizier
 from astroquery.ipac.ned import Ned
 
 from .crossmatch import points_in_footprint
+from astropy.coordinates import Angle
 
 
 # ---------------------------------------------------------------------------
@@ -121,11 +122,20 @@ def _standardise(table: Table, ra_col: str, dec_col: str,
     if dec_col in table.colnames and dec_col != "Dec":
         table.rename_column(dec_col, "Dec")
 
-    # Force RA / Dec to plain float columns (strips masks, units, etc.)
-    if "RA" in table.colnames:
-        table["RA"] = np.array(table["RA"], dtype=float)
-    if "Dec" in table.colnames:
-        table["Dec"] = np.array(table["Dec"], dtype=float)
+    # Force RA / Dec to plain float degrees (handles masked, units, sexagesimal)
+    from astropy.coordinates import Angle
+    for col in ["RA", "Dec"]:
+        if col not in table.colnames:
+            continue
+        try:
+            vals = np.array(table[col], dtype=float)
+        except (ValueError, TypeError):
+            raw = [str(v) for v in table[col]]
+            if col == "RA":
+                vals = np.array([Angle(v, unit="hourangle").deg for v in raw])
+            else:
+                vals = np.array([Angle(v, unit="deg").deg for v in raw])
+        table[col] = vals
 
     # Drop rows where RA or Dec is NaN
     if "RA" in table.colnames and "Dec" in table.colnames:
@@ -148,13 +158,13 @@ def _fetch_abell(row_limit: int, log) -> Table | None:
     log("Querying Abell cluster catalog (VizieR VII/110A)…")
     t = _vizier_query(
         "VII/110A",
-        columns=["ACO", "RAdeg", "DEdeg", "z", "Rich", "Dclass"],
+        columns=["ACO", "_RA.icrs", "_DE.icrs", "z", "Rich", "Dclass"],
         row_limit=row_limit,
     )
     if t is None:
         log("WARNING: Could not retrieve Abell catalog.")
         return None
-    t = _standardise(t, "RAdeg", "DEdeg", "Abell", "ACO")
+    t = _standardise(t, "_RA.icrs", "_DE.icrs", "Abell", "ACO")
     t["object_id"] = ["ACO_" + str(r["ACO"]) for r in t]
     return t
 
@@ -163,13 +173,13 @@ def _fetch_sdss(row_limit: int, log) -> Table | None:
     log("Querying SDSS photometric catalog (VizieR II/294)…")
     t = _vizier_query(
         "II/294",
-        columns=["objID", "RAJ2000", "DEJ2000", "cl", "rmag"],
+        columns=["objID", "RA_ICRS", "DE_ICRS", "cl", "rmag"],
         row_limit=row_limit,
     )
     if t is None:
         log("WARNING: Could not retrieve SDSS catalog.")
         return None
-    t = _standardise(t, "RAJ2000", "DEJ2000", "SDSS", "objID")
+    t = _standardise(t, "RA_ICRS", "DE_ICRS", "SDSS", "objID")
     # Keep galaxies only (classification code 3)
     if "cl" in t.colnames:
         t = t[t["cl"] == 3]
@@ -193,13 +203,13 @@ def _fetch_ngc(row_limit: int, log) -> Table | None:
     log("Querying NGC/IC catalog (VizieR VII/118)…")
     t = _vizier_query(
         "VII/118",
-        columns=["NGC", "RAJ2000", "DEJ2000", "MType", "Bmag"],
+        columns=["Name", "RAB2000", "DEB2000", "Type", "mag"],
         row_limit=row_limit,
     )
     if t is None:
         log("WARNING: Could not retrieve NGC catalog.")
         return None
-    t = _standardise(t, "RAJ2000", "DEJ2000", "NGC", "NGC")
+    t = _standardise(t, "RAB2000", "DEB2000", "NGC", "Name")
     t["object_id"] = ["NGC_" + str(r["NGC"]) for r in t]
     return t
 
