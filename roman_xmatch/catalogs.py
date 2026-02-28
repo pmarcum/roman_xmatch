@@ -169,19 +169,51 @@ def _fetch_abell(row_limit: int, log) -> Table | None:
 
 
 def _fetch_sdss(row_limit: int, log) -> Table | None:
-    log("Querying SDSS photometric catalog (VizieR II/294)…")
-    t = _vizier_query(
-        "II/294",
+    """
+    SDSS is too large to fetch wholesale from VizieR — it returns a
+    positional default slice instead of the full catalog.
+    We tile the sky and query each tile via cone search instead.
+    """
+    log("Querying SDSS photometric catalog (VizieR II/294) via sky tiling…")
+    v = Vizier(
         columns=["objID", "RA_ICRS", "DE_ICRS", "cl", "rmag"],
-        row_limit=row_limit,
+        row_limit=500,
     )
-    if t is None:
-        log("WARNING: Could not retrieve SDSS catalog.")
+    ra_centres  = np.arange(0, 360, 15)
+    dec_centres = np.arange(-80, 35, 10)
+    n_tiles     = len(ra_centres) * len(dec_centres)
+    log(f"  Querying {n_tiles} sky tiles…")
+
+    all_tables = []
+    queried    = 0
+    for dec in dec_centres:
+        for ra in ra_centres:
+            centre = SkyCoord(ra=ra * u.deg, dec=dec * u.deg, frame="icrs")
+            try:
+                result = v.query_region(centre, radius=8.0 * u.deg,
+                                        catalog="II/294")
+                if result and len(result) > 0:
+                    all_tables.append(result[0])
+            except Exception:
+                pass
+            queried += 1
+            if queried % 30 == 0:
+                log(f"  … {queried}/{n_tiles} tiles queried")
+
+    if not all_tables:
+        log("WARNING: No SDSS objects returned.")
         return None
-    t = _standardise(t, "RA_ICRS", "DE_ICRS", "SDSS", "objID")
-    # Keep galaxies only (classification code 3)
+
+    combined = vstack(all_tables)
+
+    # Deduplicate by objID
+    _, idx = np.unique(combined["objID"], return_index=True)
+    combined = combined[idx]
+
+    t = _standardise(combined, "RA_ICRS", "DE_ICRS", "SDSS", "objID")
     if "cl" in t.colnames:
         t = t[t["cl"] == 3]
+    log(f"  Retrieved {len(t):,} SDSS galaxies after deduplication.")
     return t
 
 
