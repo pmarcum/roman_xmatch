@@ -233,46 +233,66 @@ def make_sky_plot(
 
 
 # ---------------------------------------------------------------------------
-# Display in a Tkinter window
+# Display in a Tkinter window — pure Tkinter, no Pillow required
 # ---------------------------------------------------------------------------
 
 def show_plot_window(png_path: str, title: str = "Sky Plot"):
     """
-    Open the saved PNG in a simple Tkinter image viewer window.
-    Called from the GUI after the pipeline completes.
-    Non-blocking — opens in its own thread.
+    Open the saved PNG in a Tkinter Toplevel window using a Canvas.
+    Uses only tkinter.PhotoImage — no Pillow or external viewer needed.
+    Runs in the calling thread (must be called from the main Tkinter thread
+    or via root.after() to be thread-safe).
     """
-    import threading
+    import tkinter as tk
+    from tkinter import messagebox
 
-    def _open():
-        try:
-            import tkinter as tk
-            from PIL import Image, ImageTk   # Pillow
-            img  = Image.open(png_path)
-            root = tk.Toplevel()
-            root.title(title)
-            root.configure(bg="#0d0d1a")
-            # Scale to fit screen sensibly
-            w, h    = img.size
-            scale   = min(1.0, 1200 / w, 700 / h)
-            img     = img.resize((int(w * scale), int(h * scale)),
-                                 Image.LANCZOS)
-            photo   = ImageTk.PhotoImage(img)
-            lbl     = tk.Label(root, image=photo, bg="#0d0d1a")
-            lbl.image = photo   # keep reference
-            lbl.pack(padx=10, pady=10)
-            root.mainloop()
-        except ImportError:
-            # Pillow not available — fall back to OS default viewer
-            _open_with_os(png_path)
-        except Exception as e:
-            print(f"  [plot] Could not open plot window: {e}")
+    if not os.path.exists(png_path):
+        messagebox.showerror("Plot not found", f"Cannot find:\n{png_path}")
+        return
 
-    threading.Thread(target=_open, daemon=True).start()
+    win = tk.Toplevel()
+    win.title(title)
+    win.configure(bg="#0d0d1a")
+
+    try:
+        # tkinter.PhotoImage supports PNG natively in Python 3.6+
+        photo = tk.PhotoImage(file=png_path)
+    except Exception as e:
+        messagebox.showerror("Could not load plot",
+                             f"Failed to display image:\n{e}\n\n"
+                             f"The PNG was saved to:\n{png_path}")
+        win.destroy()
+        return
+
+    # Scale window to image size (cap at screen dimensions)
+    img_w, img_h = photo.width(), photo.height()
+    screen_w = win.winfo_screenwidth()
+    screen_h = win.winfo_screenheight()
+    scale    = min(1.0, (screen_w - 40) / img_w, (screen_h - 80) / img_h)
+    disp_w   = int(img_w * scale)
+    disp_h   = int(img_h * scale)
+
+    # If scaling needed, subsample (PhotoImage only supports integer subsampling)
+    if scale < 1.0:
+        factor = max(1, int(1 / scale))
+        photo  = photo.subsample(factor, factor)
+        disp_w = photo.width()
+        disp_h = photo.height()
+
+    canvas = tk.Canvas(win, width=disp_w, height=disp_h,
+                       bg="#0d0d1a", highlightthickness=0)
+    canvas.pack(padx=8, pady=8)
+    canvas.create_image(0, 0, anchor="nw", image=photo)
+    canvas.image = photo   # keep reference alive
+
+    # Save path label at the bottom
+    tk.Label(win, text=f"Saved: {png_path}",
+             fg="#888888", bg="#0d0d1a",
+             font=("Helvetica", 8)).pack(pady=(0, 6))
 
 
 def _open_with_os(png_path: str):
-    """Open a file with the OS default application."""
+    """Open a file with the OS default application (fallback, not used by default)."""
     import subprocess, sys, platform
     try:
         if sys.platform == "win32":

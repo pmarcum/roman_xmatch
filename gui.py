@@ -226,12 +226,22 @@ def run_gui():
             custom_dec_col = dec_col_var.get() or "Dec",
         )
 
+    # Track the most recently generated plot path so the button can find it
+    last_plot = {"path": None}
+
     def do_run():
         opts = get_options()
         if opts is None:
             return
         log_area.delete("1.0", tk.END)
         print("🔭 Starting Roman footprint cross-match…\n")
+
+        def on_plot_ready(png_path, survey_key):
+            """Store the plot path and enable the View Plot button."""
+            last_plot["path"] = png_path
+            plot_btn.config(state=tk.NORMAL)
+
+        opts.plot_callback = on_plot_ready
         run_task(lambda: run_pipeline(opts, log=print))
 
     def do_open_output():
@@ -258,6 +268,16 @@ def run_gui():
         except Exception as e:
             print(f"⚠️  Could not open folder: {e}")
 
+    def do_view_plot():
+        """Open the sky plot PNG in a Tkinter canvas window."""
+        png_path = last_plot["path"]
+        if not png_path or not os.path.exists(png_path):
+            messagebox.showinfo("No plot",
+                                "No sky plot available yet.\nRun a cross-match first.")
+            return
+        from .plotting import show_plot_window
+        show_plot_window(png_path, title="Roman — Sky Plot")
+
     def do_clear_log():
         log_area.delete("1.0", tk.END)
 
@@ -273,6 +293,14 @@ def run_gui():
         command=do_open_output,
         bg="#2196F3", fg="white", width=18, pady=5,
     ).pack(side=tk.LEFT, padx=5)
+
+    plot_btn = tk.Button(
+        btn_frame, text="🌌 View Sky Plot",
+        command=do_view_plot,
+        bg="#9C27B0", fg="white", width=14, pady=5,
+        state=tk.DISABLED,   # enabled automatically when a plot is ready
+    )
+    plot_btn.pack(side=tk.LEFT, padx=5)
 
     tk.Button(
         btn_frame, text="🗑  Clear Log",
