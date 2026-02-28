@@ -36,6 +36,8 @@ class PipelineOptions:
     custom_file:     Optional[str]   = None
     custom_ra_col:   str             = "RA"
     custom_dec_col:  str             = "Dec"
+    plot_callback:   Optional[Callable[[str, str], None]] = None
+    # plot_callback(png_path, survey_key) — called after each survey's plot is saved
 
 
 # ---------------------------------------------------------------------------
@@ -195,6 +197,26 @@ def run_pipeline(
 
     # Summary
     total = sum(r.n_matched for r in results)
+
+    # Generate sky plot per survey
+    for survey_key in surveys:
+        survey_results = [r for r in results if r.survey.lower() == survey_key.lower()]
+        if any(r.n_matched > 0 for r in survey_results):
+            try:
+                from .plotting import make_sky_plot
+                log(f"\n  Generating sky plot for {survey_key.upper()}…")
+                png_path = make_sky_plot(
+                    results    = survey_results,
+                    survey_key = survey_key,
+                    output_dir = opts.output_dir,
+                    healpix_mask  = healpix_mask,
+                    healpix_nside = healpix_nside,
+                )
+                if png_path and opts.plot_callback:
+                    opts.plot_callback(png_path, survey_key)
+            except Exception as exc:
+                log(f"  [plot] Warning: could not generate sky plot: {exc}")
+
     log(f"\n{'='*55}")
     log(f"  Complete — {total:,} total matched objects")
     log(f"  Output directory: {os.path.abspath(opts.output_dir)}")

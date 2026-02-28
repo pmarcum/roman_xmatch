@@ -28,7 +28,6 @@ from astroquery.vizier import Vizier
 from astroquery.ipac.ned import Ned
 
 from .crossmatch import points_in_footprint
-from astropy.coordinates import Angle
 
 
 # ---------------------------------------------------------------------------
@@ -210,7 +209,6 @@ def _fetch_ngc(row_limit: int, log) -> Table | None:
         log("WARNING: Could not retrieve NGC catalog.")
         return None
     t = _standardise(t, "RAB2000", "DEB2000", "NGC", "Name")
-    t["object_id"] = ["NGC_" + str(r["NGC"]) for r in t]
     return t
 
 

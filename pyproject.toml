@@ -37,6 +37,7 @@ dependencies = [
     "astroquery>=0.4.6",
     "numpy>=1.24",
     "pandas>=1.5",
+    "matplotlib>=3.7",
     # tkinter ships with Python — no entry needed here
     # healpy is optional (HEALPix mask file support); install separately if needed
 ]
@@ -44,6 +45,7 @@ dependencies = [
 
 [project.optional-dependencies]
 healpix = ["healpy>=1.16"]
+plots   = ["Pillow>=9.0"]   # enables in-app plot viewer; falls back to OS viewer without it
 dev     = [
     "pytest>=7",
     "pytest-cov",
@@ -57,9 +59,9 @@ roman-xmatch = "roman_xmatch.cli:main"
 
 
 [project.urls]
-Homepage   = "https://github.com/YOUR_USERNAME/roman_xmatch"
-Repository = "https://github.com/YOUR_USERNAME/roman_xmatch"
-Issues     = "https://github.com/YOUR_USERNAME/roman_xmatch/issues"
+Homepage   = "https://github.com/YOUR_USERNAME/roman-xmatch"
+Repository = "https://github.com/YOUR_USERNAME/roman-xmatch"
+Issues     = "https://github.com/YOUR_USERNAME/roman-xmatch/issues"
 
 
 [tool.hatch.build.targets.wheel]
