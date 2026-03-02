@@ -60,6 +60,10 @@ python3 -m pip install --user pipx && python3 -m pipx ensurepath
 python -m pip install --user pipx && python -m pipx ensurepath
 ```
 
+> **Windows users:** Install Python from [python.org](https://python.org) rather than
+> the Microsoft Store to ensure tkinter is available (required for the GUI).
+> WSL2 is not required but is a reliable alternative if you encounter any issues.
+
 **Step 2 — install roman-xmatch**
 
 ```bash
