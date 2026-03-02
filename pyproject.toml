@@ -2,7 +2,6 @@
 requires      = ["hatchling"]
 build-backend = "hatchling.build"
 
-
 [project]
 name        = "roman-xmatch"
 version     = "0.1.0"
@@ -10,7 +9,6 @@ description = "Cross-correlate Nancy Grace Roman Space Telescope survey footprin
 readme      = "README.md"
 license     = { text = "MIT" }
 requires-python = ">=3.10"
-
 keywords = [
     "astronomy",
     "roman",
@@ -20,7 +18,6 @@ keywords = [
     "catalogs",
     "HEALPix",
 ]
-
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Science/Research",
@@ -31,17 +28,15 @@ classifiers = [
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
 ]
-
 dependencies = [
     "astropy>=5.3",
     "astroquery>=0.4.6",
     "numpy>=1.24",
     "pandas>=1.5",
     "matplotlib>=3.7",
-    # tkinter ships with Python — no entry needed here
-    # healpy is optional (HEALPix mask file support); install separately if needed
+    # tkinter ships with CPython — no entry needed here
+    # healpy is optional (HEALPix mask support); install via the [healpix] extra
 ]
-
 
 [project.optional-dependencies]
 healpix = ["healpy>=1.16"]
@@ -53,24 +48,47 @@ dev     = [
     "mypy",
 ]
 
-
 [project.scripts]
 roman-xmatch = "roman_xmatch.cli:main"
 
-
 [project.urls]
-Homepage   = "https://github.com/YOUR_USERNAME/roman-xmatch"
-Repository = "https://github.com/YOUR_USERNAME/roman-xmatch"
-Issues     = "https://github.com/YOUR_USERNAME/roman-xmatch/issues"
+Homepage   = "https://github.com/pmarcum/roman_xmatch"
+Repository = "https://github.com/pmarcum/roman_xmatch"
+Issues     = "https://github.com/pmarcum/roman_xmatch/issues"
 
-
+# ── Wheel build ───────────────────────────────────────────────────────────
 [tool.hatch.build.targets.wheel]
 packages = ["roman_xmatch"]
 
+# Explicitly include the bundled catalog data files inside the package.
+# NOTE: sdss.fits.gz is ~96 MB.  PyPI enforces a 100 MB per-file limit and
+# a 1 GB total-release limit.  If upload is rejected, split or host the SDSS
+# file externally and have cache.py download it on first use.
+[tool.hatch.build.targets.wheel.force-include]
+"roman_xmatch/data/abell.fits.gz"    = "roman_xmatch/data/abell.fits.gz"
+"roman_xmatch/data/mcxc.fits.gz"     = "roman_xmatch/data/mcxc.fits.gz"
+"roman_xmatch/data/ngc_ugc.fits.gz"  = "roman_xmatch/data/ngc_ugc.fits.gz"
+"roman_xmatch/data/xray_gal.fits.gz" = "roman_xmatch/data/xray_gal.fits.gz"
+"roman_xmatch/data/2masx.fits.gz"    = "roman_xmatch/data/2masx.fits.gz"
+"roman_xmatch/data/sdss.fits.gz"     = "roman_xmatch/data/sdss.fits.gz"
 
+# Exclude maintainer-only and personal-output directories from the wheel
+# and the sdist.
+[tool.hatch.build]
+exclude = [
+    "scripts/",
+    "roman_xmatch_output/",
+    "count_sdss_galaxies.py",
+    "roman_xmatch/pyproject.toml",
+    "**/__pycache__/",
+    "**/*.pyc",
+]
+
+# ── Linting ───────────────────────────────────────────────────────────────
 [tool.ruff]
-line-length = 100
+line-length    = 100
 target-version = "py310"
 
+# ── Tests ─────────────────────────────────────────────────────────────────
 [tool.pytest.ini_options]
 testpaths = ["tests"]
