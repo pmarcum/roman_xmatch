@@ -12,12 +12,16 @@ generated once by running:
 
 Supported catalogs
 ------------------
-  abell            — Abell clusters of galaxies         (VizieR VII/110A)
-  chandra-clusters — MCXC X-ray galaxy clusters         (VizieR J/A+A/534/A109)
-  sdss             — SDSS DR18 photometric galaxies      (SkyServer, type=3)
-  2masx            — 2MASS Extended Source Catalog       (VizieR VII/233)
-  ngc_ugc          — NGC/IC + UGC galaxies               (VizieR VII/118 + VII/26D)
-  xray_gal         — X-ray galaxies, CSC + XMM validated (CXC + VizieR IX/69)
+  abell            — Abell clusters of galaxies              (VizieR VII/110A)
+  mcxc2            — MCXC-II X-ray galaxy clusters           (VizieR J/A+A/688/A187)
+  xmm_clusters     — XMM X-CLASS DR1 galaxy clusters         (VizieR J/MNRAS/423/1024)
+  sdss             — SDSS DR18 spectroscopic galaxies        (SkyServer)
+  2masx            — 2MASS Extended Source Catalog           (VizieR VII/233)
+  ngc_ugc          — NGC/IC + UGC galaxies                   (VizieR VII/118 + VII/26D)
+  chandra_gal      — Chandra CSC 2.1 X-ray galaxies          (CXC TAP + VizieR IX/57)
+  xmm_gal          — XMM 4XMM-DR13 X-ray galaxies            (VizieR IX/69)
+  swift_gal        — Swift 2SXPS X-ray galaxies              (VizieR IX/58)
+  hst_deep         — HST deep field galaxies (CANDELS+GOODS) (MAST + VizieR)
   custom           — User-supplied FITS or CSV file
 """
 
@@ -40,22 +44,30 @@ from .cache import load_bundled
 
 CATALOG_KEYS = [
     "abell",
-    "chandra-clusters",
+    "mcxc2",
+    "xmm_clusters",
     "sdss",
     "2masx",
     "ngc_ugc",
-    "xray_gal",
+    "chandra_gal",
+    "xmm_gal",
+    "swift_gal",
+    "hst_deep",
     "custom",
 ]
 
 CATALOG_LABELS = {
-    "abell":            "Abell Clusters (VizieR VII/110A)",
-    "chandra-clusters": "Chandra Galaxy Clusters — MCXC (VizieR J/A+A/534/A109)",
-    "sdss":             "SDSS Photometric Galaxies DR18 (SkyServer)",
-    "2masx":            "2MASS Extended Source Catalog (VizieR VII/233)",
-    "ngc_ugc":          "NGC/IC + UGC Galaxies (VizieR VII/118 + VII/26D)",
-    "xray_gal":         "X-ray Galaxies — Chandra CSC 2.1 + XMM 4XMM-DR13",
-    "custom":           "Custom user file (FITS or CSV)",
+    "abell":        "Abell Clusters (VizieR VII/110A)",
+    "mcxc2":        "MCXC-II X-ray Clusters — 2,221 clusters (VizieR J/A+A/688/A187)",
+    "xmm_clusters": "XMM X-CLASS DR1 Clusters — 503 clusters (VizieR J/MNRAS/423/1024)",
+    "sdss":         "SDSS Spectroscopic Galaxies DR18 (SkyServer)",
+    "2masx":        "2MASS Extended Source Catalog (VizieR VII/233)",
+    "ngc_ugc":      "NGC/IC + UGC Galaxies (VizieR VII/118 + VII/26D)",
+    "chandra_gal":  "Chandra X-ray Galaxies — CSC 2.1 (CXC + VizieR IX/57)",
+    "xmm_gal":      "XMM X-ray Galaxies — 4XMM-DR13 (VizieR IX/69)",
+    "swift_gal":    "Swift X-ray Galaxies — 2SXPS (VizieR IX/58)",
+    "hst_deep":     "HST Deep Fields — CANDELS + GOODS (MAST + VizieR)",
+    "custom":       "Custom user file (FITS or CSV)",
 }
 
 
@@ -103,7 +115,7 @@ def fetch_catalog(
         return _fetch_custom(custom_file, custom_ra_col, custom_dec_col, log)
 
     # All other catalogs load from bundled files
-    bundle_name = "mcxc" if key == "chandra-clusters" else key
+    bundle_name = key  # file names now match catalog keys exactly
 
     label = CATALOG_LABELS.get(key, key)
     log(f"Loading {label}…")

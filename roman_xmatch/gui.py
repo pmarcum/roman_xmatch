@@ -174,9 +174,9 @@ def run_gui():
     cat_frame = tk.Frame(opts_frame)
     cat_frame.grid(row=1, column=1, columnspan=3, sticky="w")
     cat_vars = {}
-    defaults_on = {"ngc_ugc"}
+    defaults_on = {"ngc_ugc", "chandra_gal"}
 
-    CLUSTER_KEYS = ["abell", "chandra-clusters"]
+    CLUSTER_KEYS = ["abell", "mcxc2", "xmm_clusters"]
     GALAXY_KEYS  = [k for k in CATALOG_KEYS if k not in CLUSTER_KEYS and k != "custom"]
 
     def _section_header(parent, text, grid_row):

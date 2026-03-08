@@ -29,36 +29,48 @@ from .footprints import get_footprint
 # ---------------------------------------------------------------------------
 
 CATALOG_COLORS = {
-    "abell":            "#FF4444",   # bright red
-    "sdss":             "#FFD700",   # gold
-    "2masx":            "#00FF88",   # bright green
-    "ngc_ugc":          "#FF8C00",   # orange
-    "xray_gal":         "#00BFFF",   # deep sky blue
-    "chandra-clusters": "#FF69B4",   # hot pink
+    "abell":        "#FF4444",   # bright red
+    "mcxc2":        "#FF69B4",   # hot pink
+    "xmm_clusters": "#DA70D6",   # orchid purple
+    "sdss":         "#FFD700",   # gold
+    "2masx":        "#00FF88",   # bright green
+    "ngc_ugc":      "#FF8C00",   # orange
+    "chandra_gal":  "#00BFFF",   # deep sky blue
+    "xmm_gal":      "#7DF9FF",   # electric blue
+    "swift_gal":    "#ADFF2F",   # green-yellow
+    "hst_deep":     "#FF00FF",   # magenta
     "custom":           "#FFFFFF",   # white
 }
 DEFAULT_COLOR = "#FFFF00"
 
 CATALOG_MARKERS = {
-    "abell":            "^",   # triangle up
-    "chandra-clusters": "D",   # diamond
-    "sdss":             ".",   # pixel dot
-    "2masx":            "s",   # square
-    "ngc_ugc":          "o",   # circle
-    "xray_gal":         "+",   # plus cross
+    "abell":        "^",   # triangle up
+    "mcxc2":        "D",   # diamond
+    "xmm_clusters": "v",   # triangle down
+    "sdss":         ".",   # pixel dot
+    "2masx":        "s",   # square
+    "ngc_ugc":      "o",   # circle
+    "chandra_gal":  "+",   # plus cross
+    "xmm_gal":      "x",   # x cross
+    "swift_gal":    "p",   # pentagon
+    "hst_deep":     "*",   # star
     "custom":           "*",   # star
 }
 DEFAULT_MARKER = "o"
 
 # Zoom threshold (degrees of view width) below which labels appear
 LABEL_ZOOM_THRESHOLD = {
-    "abell":            360,   # always
-    "chandra-clusters": 360,   # always
-    "xray_gal":         360,   # always
-    "ngc_ugc":          20,    # medium zoom
-    "2masx":            5,     # close zoom
-    "sdss":             3,     # very close zoom
-    "custom":           10,
+    "abell":        360,   # always
+    "mcxc2":        360,   # always
+    "xmm_clusters": 360,   # always
+    "chandra_gal":  360,   # always
+    "xmm_gal":      360,   # always
+    "swift_gal":    360,   # always
+    "ngc_ugc":      20,    # medium zoom
+    "2masx":        5,     # close zoom
+    "hst_deep":     3,     # very close zoom
+    "sdss":         3,     # very close zoom
+    "custom":       10,
 }
 
 MAX_LABELS = 80   # cap to avoid clutter even when zoomed way in
@@ -76,9 +88,13 @@ def _format_label(cat_key: str, object_id: str, ra: float, dec: float) -> str:
         # "ACO_426" → "426"
         return oid.replace("ACO_", "")
 
-    if cat_key == "chandra-clusters":
+    if cat_key == "mcxc2":
         # "MCXC_J0000.1+0816" → "0000.1+0816"
         return oid.replace("MCXC_", "").lstrip("J")
+
+    if cat_key == "xmm_clusters":
+        # "XCLASS_123" → "XCL123"
+        return oid.replace("XCLASS_", "XCL")[:9]
 
     if cat_key == "ngc_ugc":
         # "NGC_7801"  → "N7801"
@@ -93,7 +109,7 @@ def _format_label(cat_key: str, object_id: str, ra: float, dec: float) -> str:
             return "N" + inner        # "N7801"
         return oid
 
-    if cat_key == "xray_gal":
+    if cat_key in ("chandra_gal", "xmm_gal"):
         # "4XMM_J123456.7+..." → "123456.7+..." (9 chars)
         # "CXO J123456.7+..."  → "123456.7+..." (9 chars)
         s = oid
@@ -103,6 +119,20 @@ def _format_label(cat_key: str, object_id: str, ra: float, dec: float) -> str:
                 break
         s = s.lstrip("J")
         return s[:9]
+
+    if cat_key == "swift_gal":
+        # "2SXPS_12345" → "SX12345"
+        return oid.replace("2SXPS_", "SX")[:9]
+
+    if cat_key == "hst_deep":
+        # "COSMOS_123" → "COS123", "CANDELS_UDS_456" → "UDS456", etc.
+        for prefix, short in [("CANDELS_GOODS_S_", "GDS"), ("CANDELS_UDS_", "UDS"),
+                               ("CANDELS_COSMOS_", "COS"), ("CANDELS_EGS_", "EGS"),
+                               ("COSMOS_", "COS"), ("GOODS_S_", "GDS"),
+                               ("GOODS_N_", "GDN")]:
+            if oid.startswith(prefix):
+                return short + oid[len(prefix):][:6]
+        return oid[:9]
 
     if cat_key == "2masx":
         # "2MASX J12345678+..." → "12345678..." (9 chars)
